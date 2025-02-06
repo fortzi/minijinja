@@ -27,7 +27,7 @@ jobs:
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
-          name: wheels
+          name: wheels-macos
           path: dist
 
   linux:
@@ -55,7 +55,7 @@ jobs:
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
-          name: wheels
+          name: wheels-linux-${{ matrix.target }}
           path: dist
 
   windows:
@@ -80,7 +80,7 @@ jobs:
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
-          name: wheels
+          name: wheels-windows-${{ matrix.target }}
           path: dist
 
   publish-gemfury:
@@ -97,9 +97,27 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: wheels
+          name: wheels-macos
+      - uses: actions/download-artifact@v4
+        with:
+          name: wheels-linux-i686
+      - uses: actions/download-artifact@v4
+        with:
+          name: wheels-linux-x86_64
+      - uses: actions/download-artifact@v4
+        with:
+          name: wheels-linux-armv7l
+      - uses: actions/download-artifact@v4
+        with:
+          name: wheels-linux-aarch64
+      - uses: actions/download-artifact@v4
+        with:
+          name: wheels-windows-x64
+      - uses: actions/download-artifact@v4
+        with:
+          name: wheels-windows-x86
       - name: Publish to Gemfury
         uses: PyO3/maturin-action@v1
         with:
           command: upload
-          args: --non-interactive --skip-existing minijinja-*
+          args: --skip-existing minijinja-*
