@@ -2,6 +2,7 @@ import binascii
 import pytest
 import posixpath
 import types
+from functools import total_ordering
 
 from _pytest.unraisableexception import catch_unraisable_exception
 from minijinja import (
@@ -372,3 +373,43 @@ def test_undeclared_variables():
         "foo",
         "bar.x",
     }
+
+
+def test_loop_controls():
+    env = Environment()
+    rv = env.render_str("""
+    {% for x in [1, 2, 3, 4, 5] %}
+      {% if x == 1 %}
+        {% continue %}
+      {% elif x == 3 %}
+        {% break %}
+      {% endif %}
+      {{ x }}
+    {% endfor %}
+    """)
+    assert rv.split() == ["2"]
+
+
+def test_pass_through_sort():
+    @total_ordering
+    class X(object):
+        def __init__(self, value):
+            self.value = value
+
+        def __eq__(self, other):
+            if type(self) is not type(other):
+                return NotImplemented
+            return self.value == other.value
+
+        def __lt__(self, other):
+            if type(self) is not type(other):
+                return NotImplemented
+            return self.value < other.value
+
+        def __str__(self):
+            return str(self.value)
+
+    values = [X(4), X(23), X(42), X(-1)]
+    env = Environment()
+    rv = env.render_str("{{ values|sort|join(',') }}", values=values)
+    assert rv == "-1,4,23,42"
