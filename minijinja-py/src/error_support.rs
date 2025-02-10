@@ -1,3 +1,4 @@
+use std::any::Any;
 use std::cell::RefCell;
 
 use minijinja::{Error, ErrorKind};
@@ -10,6 +11,7 @@ static TEMPLATE_ERROR: OnceCell<Py<PyAny>> = OnceCell::new();
 
 thread_local! {
     static STASHED_ERROR: RefCell<Option<PyErr>> = const { RefCell::new(None) };
+    static PANIC_INFO: RefCell<Option<(String, Option<String>)>> = const { RefCell::new(None) };
 }
 
 /// Provides information about a template error from the runtime.
@@ -96,11 +98,37 @@ pub fn report_unraisable(py: Python<'_>, err: PyErr) {
 fn make_error(err: Error) -> PyErr {
     Python::with_gil(|py| {
         let template_error: &Py<PyAny> = TEMPLATE_ERROR.get_or_init(|| {
-            let module = py.import_bound("minijinja._internal").unwrap();
+            let module = py.import("minijinja._internal").unwrap();
             let err = module.getattr("make_error").unwrap();
             err.into()
         });
-        let args = PyTuple::new_bound(py, [Bound::new(py, ErrorInfo { err }).unwrap()]);
-        PyErr::from_value_bound(template_error.call1(py, args).unwrap().bind(py).clone())
+        let args = PyTuple::new(py, [Bound::new(py, ErrorInfo { err }).unwrap()]).unwrap();
+        PyErr::from_value(template_error.call1(py, args).unwrap().bind(py).clone())
     })
+}
+
+fn payload_as_str(payload: &dyn Any) -> &str {
+    if let Some(&s) = payload.downcast_ref::<&'static str>() {
+        s
+    } else if let Some(s) = payload.downcast_ref::<String>() {
+        s.as_str()
+    } else {
+        "unknown error"
+    }
+}
+
+pub(crate) fn init_panic_hook() {
+    std::panic::set_hook(Box::new(|info| {
+        let msg = payload_as_str(info.payload());
+        let loc = info.location();
+        PANIC_INFO.with(|stash| {
+            let str_loc = loc.map(|loc| format!("{}:{}", loc.file(), loc.line()));
+            *stash.borrow_mut() = Some((msg.to_string(), str_loc));
+        });
+    }));
+}
+
+#[pyfunction]
+pub(crate) fn get_panic_info() -> PyResult<Option<(String, Option<String>)>> {
+    Ok(PANIC_INFO.with(|stash| stash.borrow().clone()))
 }

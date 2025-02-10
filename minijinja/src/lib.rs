@@ -178,7 +178,7 @@
 //!   the ability to auto escape via `AutoEscape::Json`.
 //! - `urlencode`: When enabled the `urlencode` filter is added as builtin filter.
 //! - `loop_controls`: enables the `{% break %}` and `{% continue %}` loop control flow
-//!    tags.
+//!   tags.
 //!
 //! Performance and memory related features:
 //!
@@ -245,23 +245,6 @@ pub use self::value::Value;
 
 pub use self::macros::__context;
 pub use self::vm::State;
-
-// forwards compatibility
-#[cfg(not(feature = "serde"))]
-const _: () = {
-    #[deprecated(
-        since = "2.0.4",
-        note = "Future versions of MiniJinja will require enabling \
-        the 'serde' feature to use serde types.  To silence this warning \
-        add 'serde' to the list of features of minijinja."
-    )]
-    #[allow(unused)]
-    fn enable_implicit_serde_support() {}
-
-    fn trigger_warning() {
-        enable_implicit_serde_support();
-    }
-};
 
 /// This module gives access to the low level machinery.
 ///
