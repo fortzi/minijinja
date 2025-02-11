@@ -91,9 +91,7 @@ jobs:
       - linux
       - macos
     env:
-      MATURIN_REPOSITORY_URL: https://pypi.fury.io/tymely/
-      MATURIN_PYPI_TOKEN: ${{ secrets.OPS_GEMFURY_PUSH_TOKEN }}
-      MATURIN_PASSWORD: ${{ secrets.OPS_GEMFURY_TYPI_PASSWORD }}
+      MATURIN_REPOSITORY_URL: https://${{ secrets.OPS_GEMFURY_PUSH_TOKEN }}:NOPASS@pypi.fury.io/tymely/
     steps:
       - uses: actions/download-artifact@v4
         with:
