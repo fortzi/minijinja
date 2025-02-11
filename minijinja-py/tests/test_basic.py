@@ -428,3 +428,48 @@ def test_fucked_up_object():
         match="invalid operation: failed to sort: user-provided comparison function does not correctly implement a total order",
     ):
         env.eval_expr("values|sort", values=values)
+
+
+def test_threading_interactions():
+    from time import time
+    from concurrent.futures import ThreadPoolExecutor
+
+    done = []
+
+    def busy_wait(value, seconds: float):
+        start = time()
+        while time() - start < seconds:
+            continue
+        done.append(value)
+        return value
+
+    env = Environment(filters={"busy_wait": busy_wait})
+    executor = ThreadPoolExecutor()
+
+    for _ in range(4):
+        executor.submit(lambda: env.render_str("{{ 'something' | busy_wait(0.1) }}"))
+
+    executor.shutdown(wait=True)
+    assert done == ["something"] * 4
+
+
+def test_truthy():
+    class Custom:
+        def __init__(self, is_true):
+            self.is_true = is_true
+
+        def __bool__(self):
+            return bool(self.is_true)
+
+    env = Environment()
+    assert env.eval_expr("x|bool", x=Custom(True)) is True
+    assert env.eval_expr("x|bool", x=Custom(False)) is False
+    assert env.eval_expr("x|bool", x=Custom(None)) is False
+    assert env.eval_expr("x|bool", x=Custom("")) is False
+    assert env.eval_expr("x|bool", x=Custom("foo")) is True
+
+    class Fallback:
+        def __bool__(self):
+            raise RuntimeError("swallowed but true")
+
+    assert env.eval_expr("x|bool", x=Fallback()) is True
