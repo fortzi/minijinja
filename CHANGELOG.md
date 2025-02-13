@@ -23,6 +23,11 @@ All notable changes to MiniJinja are documented here.
   rendering from the same environment at once.  #717
 - The Python bindings handle `__bool__` correctly now for custom
   objects in if-conditions and filters.  #719
+- Fixed a bug where `}}` caused a syntax error in expressions with
+  open parentheses, braces or brackets.  #723
+- Added `State::known_variables` to return a list of known variables
+  and `Environment::globals`.  #724
+- Fixed an issue with undeclared variables not handling `caller`.  #725
 
 ## 2.8.0
 

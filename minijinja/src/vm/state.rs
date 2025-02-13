@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
 use std::sync::{Arc, Mutex};
@@ -104,7 +105,7 @@ impl<'template, 'env> State<'template, 'env> {
     pub(crate) fn new_for_env(env: &'env Environment) -> State<'env, 'env> {
         State::new(
             env,
-            Context::new(env.recursion_limit()),
+            Context::new(env),
             AutoEscape::None,
             &crate::compiler::instructions::EMPTY_INSTRUCTIONS,
             BTreeMap::new(),
@@ -151,7 +152,7 @@ impl<'template, 'env> State<'template, 'env> {
     /// able to find it.
     #[inline(always)]
     pub fn lookup(&self, name: &str) -> Option<Value> {
-        self.ctx.load(self.env, name)
+        self.ctx.load(name)
     }
 
     /// Looks up a global macro and calls it.
@@ -222,6 +223,18 @@ impl<'template, 'env> State<'template, 'env> {
     /// Returns a list of the names of all exports (top-level variables).
     pub fn exports(&self) -> Vec<&str> {
         self.ctx.exports().keys().copied().collect()
+    }
+
+    /// Returns a list of all known variables.
+    ///
+    /// This list contains all variables that are currently known to the state.
+    /// To retrieve the values you can use [`lookup`](Self::lookup).  This will
+    /// include all the globals of the environment.  Note that if the context
+    /// has been initialized with an object that lies about variables (eg: it
+    /// does not correctly implement enumeration), the returned list might not
+    /// be complete.
+    pub fn known_variables(&self) -> Vec<Cow<'_, str>> {
+        Vec::from_iter(self.ctx.known_variables(true))
     }
 
     /// Fetches a template by name with path joining.

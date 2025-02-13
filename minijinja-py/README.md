@@ -172,6 +172,13 @@ Here is what this means for some basic types:
   be used to disambiugate properties and keys, in MiniJinja there is no such difference.
   However methods are disambiugated so `foo.items()` works and will correctly call
   the method in all cases.
+* Operator overloading is not supported.  This in particular means that operators like
+  `+` will not invoke the `__add__` method of most objects.  This is an intentional
+  limitation of the engine.
+* When MiniJinja objects are exposed to the Python side they lose most of their
+  functionality.  For instance plain objects such as functions are currently
+  just represented as strings, maps are dictionaries etc.  This also means you
+  cannot call methods on them from the Python side.
 
 ## Threading
 

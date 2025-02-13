@@ -251,6 +251,10 @@ impl<'env, 'source> Template<'env, 'source> {
     /// let undeclared = tmpl.undeclared_variables(true);
     /// // returns ["foo", "bar.baz"]
     /// ```
+    ///
+    /// Note that this does not special case global variables.  This means
+    /// that for instance a template that uses `namespace()` will return
+    /// `namespace` in the return value.
     pub fn undeclared_variables(&self, nested: bool) -> HashSet<String> {
         match parse(
             self.compiled.instructions.source(),
@@ -272,7 +276,7 @@ impl<'env, 'source> Template<'env, 'source> {
     pub fn new_state(&self) -> State<'_, 'env> {
         State::new(
             self.env,
-            Context::new(self.env.recursion_limit()),
+            Context::new(self.env),
             self.compiled.initial_auto_escape,
             &self.compiled.instructions,
             prepare_blocks(&self.compiled.blocks),
